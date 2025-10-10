@@ -1,7 +1,104 @@
 # Project Log: RC Light Controller
 
 This document serves as the official engineering log, tracking all decisions, changes, and milestones for the project.
+--- Begin imported log from Google Keep
 
+**Project:** RC Light Controller
+**Version:** 0.2 (Provisional Hardware & Logic Plan)
+**Date:** August 30, 2025
+
+### Changelog v0.2
+* Consolidated all hardware and software decisions from initial planning sessions.
+* Replaced SMD LEDs with through-hole SparkFun COM-12986.
+* Added Advanced Photonix NSL-6110 photocell for automatic headlights.
+* Added transmission pass-through feature for automatic hazard lights.
+* Removed unsuitable HW-131 power supply from BOM.
+* Added JST-PH connectors and main power switch to BOM.
+* Defined rear light cluster logic.
+* Updated pinout to reflect all new hardware.
+
+---
+
+### 1. Project Overview
+To develop a custom, PCB-based light controller for an RC truck using an Arduino Nano Every. The system will manage standard and addressable LEDs based on RC inputs and sensor data, with a non-blocking, state-machine-based software architecture.
+
+### 2. Hardware Specification
+* **Microcontroller:** Arduino Nano Every
+* **Addressable LEDs:** SparkFun COM-12986 (Through-Hole)
+* **Sensor (Current):** ACS712 Module
+* **Sensor (Light):** Advanced Photonix NSL-6110
+* **RC System:** Flysky FS-G7P (Transmitter) & FS-R7P (Receiver)
+* **Power:** 5V, 3A UBEC
+* **Connectors:** JST-PH
+* **Switches:** Main Power (SPST), Mode Select (Push-button/Toggle)
+
+### 3. Final System Pinout (Provisional)
+| Pin | Function | Status | Notes |
+| :-- | :--- | :--- | :--- |
+| D2 | Light Mode Switch | **In Use** | Input |
+| D3 | Throttle Channel | **In Use** | Input |
+| D4 | Steering Channel | **In Use** | Input |
+| D5 | Light Bar Output | **In Use** | Standard LED |
+| D7/D8| Chassis LED Chain | **In Use** | Addressable |
+| D9 | Headlights Output | **In Use** | Standard LED |
+| D10/D11| Body LED Chain | **In Use** | Addressable |
+| D12| CH3 (Transmission) In | **In Use** | Servo Pass-through |
+| D13| Transmission Servo Out| **In Use** | Servo Pass-through |
+| A0 | ACS712 Sensor | **In Use** | Analog |
+| A1 | Photocell Sensor | **In Use** | Analog |
+
+### 4. Bill of Materials
+* **MCU:** Arduino Nano Every (1)
+* **LEDs:** SparkFun COM-12986 (25)
+* **Sensors:** ACS712 Module (1), Advanced Photonix NSL-6110 (1)
+* **Power:** 5V 3A UBEC (1), 1000uF Capacitor (1)
+* **Connectors:** JST-PH Kit (1)
+* **Switches:** Waterproof SPST (1), Mode Switch (1)
+* **Resistors:** 10kΩ (1), 430Ω (2)
+
+### 5. Software Logic Requirements
+* **Manual Modes:** User-controlled via D2 switch.
+* **Automatic Lights:**
+    * Brake/Reverse from throttle input.
+    * Turn Signals from steering gesture.
+    * Hazard Lights when transmission is in low gear (CH3).
+    * Headlights/Tail Lights from photocell.
+    * Rock Lights flash red on high motor current (ACS712).
+* **Rear Light Logic:** Per side, center-out: Turn, Reverse, Tail/Brake, Brake.
+
+### 6. Source Code Framework (`RC_Light_Controller_v0_2.ino`)
+```cpp
+// =================================================================
+// Project: RC Light Controller
+// Version: 0.2 (Provisional Hardware & Logic Plan)
+// =================================================================
+
+// -- LIBRARIES --
+#include <FastLED.h>
+#include <Servo.h>
+
+// -- PIN DEFINITIONS --
+// Inputs
+#define PIN_MODE_SWITCH 2
+#define PIN_THROTTLE_IN 3
+#define PIN_STEERING_IN 4
+#define PIN_CH3_IN 12
+#define PIN_ACS712_IN A0
+#define PIN_PHOTOCELL_IN A1
+
+// Outputs
+#define PIN_SERVO_OUT 13
+#define PIN_LIGHT_BAR 5
+#define PIN_HEADLIGHTS 9
+
+// Addressable LED Chains
+#define PIN_CHASSIS_LED_DATA 7
+#define PIN_CHASSIS_LED_CLOCK 8
+#define PIN_BODY_LED_DATA 10
+#define PIN_BODY_LED_CLOCK 11
+```
+
+--- End imported log information
 ---
 ### **October 9, 2025: Session 1 - Project Migration to GitHub**
 
