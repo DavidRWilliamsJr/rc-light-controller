@@ -99,7 +99,7 @@ To develop a custom, PCB-based light controller for an RC truck using an Arduino
 ```
 
 --- End imported log information
----
+
 ### **October 9, 2025: Session 1 - Project Migration to GitHub**
 
 **Summary:** Successfully migrated the project from a notes-based system (Google Keep) to a structured Git repository.
