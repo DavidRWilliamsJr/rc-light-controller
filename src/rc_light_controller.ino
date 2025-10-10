@@ -76,8 +76,8 @@ void setup() {
   ibus.begin(Serial1);
 
   // Initialize FastLED
-  FastLED.addLeds<WS212B, PIN_CHASSIS_LED_DATA, GRB>(g_chassisLeds, NUM_LEDS_CHASSIS);
-  FastLED.addLeds<WS212B, PIN_BODY_LED_DATA, GRB>(g_bodyLeds, NUM_LEDS_BODY);
+  FastLED.addLeds<WS2812B, PIN_CHASSIS_LED_DATA, GRB>(g_chassisLeds, NUM_LEDS_CHASSIS);
+  FastLED.addLeds<WS2812B, PIN_BODY_LED_DATA, GRB>(g_bodyLeds, NUM_LEDS_BODY);
 
   // Pin Modes
   pinMode(PIN_HEADLIGHTS, OUTPUT);
