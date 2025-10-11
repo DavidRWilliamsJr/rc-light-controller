@@ -1,0 +1,52 @@
+// =================================================================
+// Project:   i-BUS Receiver Diagnostic Tool
+// Version:   3.1 (Final Test: SoftwareSerial on Pin D9)
+// Date:      October 11, 2025
+// =================================================================
+
+// -- LIBRARIES --
+#include <Arduino.h>
+#include <SoftwareSerial.h>
+#include <FlySkyIBus.h>
+
+// -- PIN DEFINITIONS --
+#define IBUS_RX_PIN 9 // <-- Use Pin 9 as our new, virtual RX pin
+
+// -- OBJECTS --
+// Create a new SoftwareSerial port. The "true" at the end enables
+// the built-in signal inversion.
+SoftwareSerial ibusSerial(IBUS_RX_PIN, IBUS_RX_PIN + 1, true);
+
+// =================================================================
+//   SETUP: Runs once at power-on
+// =================================================================
+void setup() {
+  // Start the main serial port for debugging (to the computer)
+  Serial.begin(115200);
+  delay(1000); 
+  
+  Serial.println("--- i-BUS Diagnostic Tool v3.1 ---");
+  Serial.println("Using SoftwareSerial with inversion on Pin 9.");
+
+  // Start the i-BUS listener on our new virtual serial port.
+  IBus.begin(ibusSerial); 
+
+  Serial.println("IBus.begin() with SoftwareSerial is complete.");
+}
+
+// =================================================================
+//   LOOP: Runs continuously
+// =================================================================
+void loop() {
+  // Print each channel's value.
+  for (int i = 0; i < 10; i++) {
+    Serial.print("CH");
+    Serial.print(i + 1);
+    Serial.print(": ");
+    Serial.print(IBus.readChannel(i));
+    Serial.print("\t");
+  }
+  Serial.println();
+  
+  delay(250); // Slow down the printing
+}
