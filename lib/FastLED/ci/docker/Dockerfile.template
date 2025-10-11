@@ -1,0 +1,58 @@
+# syntax=docker/dockerfile:1.7
+
+# PlatformIO Platform-Specific Image for FastLED
+# This image builds on the base image and pre-caches platform-specific toolchains
+# (e.g., avr-gcc for Arduino Uno, xtensa-esp32-elf-gcc for ESP32, etc.)
+
+# Use FastLED PlatformIO base image (contains uv, PlatformIO, and all Python dependencies)
+FROM fastled-platformio:latest
+
+# Accept platform name as build argument
+ARG PLATFORM_NAME
+ENV PLATFORM_NAME=${PLATFORM_NAME}
+
+# NOTE: platformio.ini is NOT copied here - it's generated dynamically by build.sh
+# from the PLATFORM_NAME using ci/boards.py (the source of truth)
+
+# Copy build script for dependency caching
+# Using a script file makes Docker layer caching more deterministic
+COPY build.sh /tmp/build.sh
+RUN chmod +x /tmp/build.sh
+
+# Multi-stage dependency installation for better Docker layer caching
+# Each RUN creates a separate cache layer that only invalidates when its specific dependency changes
+
+# LAYER 1: Install Platform (separate cache layer)
+# This installs the platform definition without default packages
+# Invalidates only when platform version/URL changes
+RUN /tmp/build.sh install-platform
+
+# LAYER 2: Install Platform Packages (toolchains, compilers - separate cache layer)
+# This installs platform-specific toolchains and tools (e.g., avr-gcc, xtensa-esp32-elf-gcc)
+# Invalidates only when toolchain versions change
+RUN /tmp/build.sh install-packages
+
+# LAYER 3: Warm up compilation (separate cache layer)
+# Run initial compilation to complete any remaining setup and validate everything works
+# This downloads any framework files needed during compilation
+RUN /tmp/build.sh compile
+
+# The platform toolchains are now BAKED INTO the image at ~/.platformio
+# /fastled remains pristine with library source downloaded from GitHub
+# At runtime, mount your local FastLED code to update /fastled
+
+
+# Create output directory for compiled binaries
+RUN mkdir -p /fastled/output
+
+# Set working directory to FastLED root
+WORKDIR /fastled
+
+# No entrypoint - all sync/output logic is handled by ci-compile.py via docker exec
+# Default command to keep container running (overridden at runtime)
+CMD ["/bin/bash"]
+
+# Metadata labels (can be overridden with --label flags during build)
+LABEL maintainer="FastLED Team"
+LABEL description="PlatformIO Docker image with pre-cached dependencies for FastLED"
+LABEL version="1.0.0"
