@@ -1,0 +1,14 @@
+#include <Arduino.h>
+
+void setup() {
+  // Start the serial port at the speed we expect.
+  Serial.begin(115200);
+  delay(1000); // Wait a second
+  Serial.println("--- Baud Rate Test ---");
+}
+
+void loop() {
+  // Print a simple, repeating message.
+  Serial.println("Hello World - If you can read this, the baud rate is correct.");
+  delay(1000); // Print once per second
+}

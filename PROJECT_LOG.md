@@ -140,4 +140,16 @@ To develop a custom, PCB-based light controller for an RC truck using an Arduino
 * **Datasheets Added:** The official user manuals for the FS-R7P and FS-R7V receivers were downloaded and added to a new `docs` folder in the repository.
 * **Git Workflow:** Established and confirmed the correct workflow for vendoring libraries by removing their `.git` history, ensuring the project is fully self-contained.
 
-**Status:** The project is now in a "clean room" state. The code is complete, the documentation is accurate, and all assets are correctly version-controlled. The project is fully prepared for the hardware testing phase.                
+**Status:** The project is now in a "clean room" state. The code is complete, the documentation is accurate, and all assets are correctly version-controlled. The project is fully prepared for the hardware testing phase.
+### **October 11, 2025: Session 6 - In-Depth Hardware Diagnostics & Root Cause Analysis**
+
+**Summary:** Performed a comprehensive, hands-on diagnostic of the Flysky FS-R7P receiver. After extensive debugging of the software and development environment, the root cause of communication failure was identified as an inverted serial signal from the i-BUS port.
+
+**Log Details:**
+* **Local Environment Setup:** Successfully configured a native Windows development environment in VS Code with PlatformIO. All initial setup issues, including Git installation, COM port conflicts, and WSL environment problems, were resolved.
+* **Diagnostic Debugging:** Worked through a series of compiler errors and runtime issues with multiple i-BUS libraries. This process ruled out library incompatibility, clock speed mismatches, and baud rate errors as the primary problem.
+* **Hardware Verified:** Physical tests confirmed the receiver has a solid power connection and is correctly bound to the transmitter. The Arduino Nano Every is also fully functional.
+* **Root Cause Identified:** The consistent "all zeros" data output, despite a successful software compile and valid hardware connection, definitively points to a signal-level issue. The i-BUS protocol's inverted serial signal is incompatible with the Arduino Nano Every's default hardware serial port logic.
+* **Solution Defined:** The final, correct solution is to implement a simple NPN transistor-based hardware circuit to physically invert the signal before it reaches the Arduino's RX pin. A final diagnostic sketch (`v4.0`) was created for use with this hardware solution.
+
+**Status:** The project is paused pending the construction of the hardware signal inverter. The diagnostic phase is complete, and the path forward is clear.

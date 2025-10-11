@@ -1,18 +1,21 @@
 // =================================================================
 // Project:   i-BUS Receiver Diagnostic Tool
-// Version:   1.2 (Correct Library Usage)
-// Date:      October 10, 2025
-// Purpose:   To read and display all channel data from a
-//            Flysky i-BUS receiver for testing and calibration.
+// Version:   3.0 (SoftwareSerial Inverted Signal Solution)
+// Date:      October 11, 2025
 // =================================================================
 
 // -- LIBRARIES --
-#include <IBusBM.h>
+#include <Arduino.h>
+#include <SoftwareSerial.h> // <-- Use the standard SoftwareSerial library
+#include <FlySkyIBus.h>
+
+// -- PIN DEFINITIONS --
+#define IBUS_RX_PIN 8 // Use Pin 8 as our new, virtual RX pin
 
 // -- OBJECTS --
-// Initialize i-BUS object to listen on the second hardware
-// serial port (Serial1), which corresponds to Pin D0 (RX).
-IBusBM ibus;
+// Create a new SoftwareSerial port. The "true" at the end enables
+// the built-in signal inversion.
+SoftwareSerial ibusSerial(IBUS_RX_PIN, IBUS_RX_PIN + 1, true);
 
 // =================================================================
 //   SETUP: Runs once at power-on
@@ -20,37 +23,31 @@ IBusBM ibus;
 void setup() {
   // Start the main serial port for debugging (to the computer)
   Serial.begin(115200);
+  delay(1000); 
+  
+  Serial.println("--- i-BUS Diagnostic Tool v3.0 ---");
+  Serial.println("Using SoftwareSerial with inversion on Pin 8.");
 
-  // Give it a moment to initialize before we start printing.
-  delay(1000);
+  // Start the i-BUS listener, but tell it to use our new
+  // virtual (software) serial port instead of a hardware one.
+  IBus.begin(ibusSerial); 
 
-  Serial.println("--- i-BUS Diagnostic Tool ---");
-  Serial.println("Listening for receiver data...");
-
-  // Start the second serial port to listen for the i-BUS receiver
-  ibus.begin(Serial1);
+  Serial.println("IBus.begin() with SoftwareSerial is complete.");
 }
 
 // =================================================================
 //   LOOP: Runs continuously
 // =================================================================
 void loop() {
-  // CORRECTION: Call the library's loop() function. This function
-  // handles all the background work of reading and parsing data.
-  ibus.loop();
-
-  // Now, we can simply read the channel data at any time. The values
-  // will be automatically updated in the background by ibus.loop().
+  // Print each channel's value.
   for (int i = 0; i < 10; i++) {
     Serial.print("CH");
-    Serial.print(i + 1); // Print channel 1-10 instead of 0-9
+    Serial.print(i + 1);
     Serial.print(": ");
-    Serial.print(ibus.readChannel(i));
-    Serial.print("\t"); // Use a tab for spacing
+    Serial.print(IBus.readChannel(i));
+    Serial.print("\t");
   }
-  Serial.println(); // Move to the next line for the next packet
-
-  // A small delay to keep the serial monitor from flooding
-  // and becoming unreadable.
-  delay(50);
+  Serial.println();
+  
+  delay(250); // Slow down the printing to be human-readable
 }
