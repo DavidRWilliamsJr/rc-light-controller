@@ -123,24 +123,15 @@ To develop a custom, PCB-based light controller for an RC truck using an Arduino
 * **Input Smoothing:** Implemented a Simple Moving Average (SMA) filter in the framework to smooth jitter from the raw RC channel inputs.
 * **Lighting Logic:** Designed and logically implemented all major lighting features:
     * A "hold brake" model for realistic brake light operation.
-        * Automatic headlights based on a photocell sensor threshold.
-            * Automatic hazard lights linked to the 2-speed transmission channel.
-                * High-load rock lights linked to an ACS712 current sensor.
-                * **Output Control:** Integrated the FastLED library to control two separate addressable LED strips, providing a foundation for all animated lighting effects.
-                * **Code Audit:** Performed a full audit of the resulting `v0.5` framework, correcting a minor initialization bug and confirming the overall logic is sound.
+    * Automatic headlights based on a photocell sensor threshold.
+    * Automatic hazard lights linked to the 2-speed transmission channel.
+    * High-load rock lights linked to an ACS72 current sensor.
+* **Output Control:** Integrated the FastLED library to control two separate addressable LED strips, providing a foundation for all animated lighting effects.
+* **Code Audit:** Performed a full audit of the resulting `v0.5` framework, correcting a minor initialization bug and confirming the overall logic is sound.
 
-                **Status:** The software framework is feature-complete and ready for hardware testing and deployment.
-### **October 10, 2025: Session 4 - Documentation Audit & Finalization**
+**Status:** The software framework is feature-complete and ready for hardware testing and deployment.
 
-**Summary:** Completed a full audit and update of all project documentation, including the Bill of Materials and hardware datasheets, to ensure all project assets are synchronized with the final design.
-
-**Log Details:**
-* **BOM Audit:** Compared the existing Bill of Materials (`.xlsx` file) against the `v0.5` code framework. Identified several obsolete and missing components.
-* **BOM Update:** The master BOM was corrected by the user to reflect the current design (e.g., swapping P9823 for WS2812B LEDs, adding the photocell and its resistor). A `.csv` version was added to the repository for better accessibility.
-* **Datasheets Added:** The official user manuals for the FS-R7P and FS-R7V receivers were downloaded and added to a new `docs` folder in the repository.
-* **Git Workflow:** Established and confirmed the correct workflow for vendoring libraries by removing their `.git` history, ensuring the project is fully self-contained.
-
-**Status:** The project is now in a "clean room" state. The code is complete, the documentation is accurate, and all assets are correctly version-controlled. The project is fully prepared for the hardware testing phase.
+---
 ### **October 11, 2025: Session 5 - In-Depth Hardware Diagnostics & Root Cause Analysis**
 
 **Summary:** Performed a comprehensive, hands-on diagnostic of the Flysky FS-R7P receiver. After extensive debugging of the software and development environment, the root cause of communication failure was identified as an inverted serial signal from the i-BUS port.
