@@ -1,0 +1,51 @@
+// =================================================================
+// Project:   i-BUS Receiver Diagnostic Tool
+// Version:   7.3 (Correct 8E2 Serial Configuration)
+// Date:      October 12, 2025
+// Purpose:   To test the 8-bit, Even Parity, 2 Stop Bit serial
+//            configuration for the i-BUS protocol.
+// =================================================================
+
+// -- LIBRARIES --
+#include <IBusBM.h>
+
+// -- OBJECTS --
+IBusBM ibus;
+
+// =================================================================
+//   SETUP: Runs once at power-on
+// =================================================================
+void setup() {
+  Serial.begin(115200);
+  delay(1000);
+
+  Serial.println("--- i-BUS Diagnostic Tool v7.3 (8E2 Test) ---");
+
+  // --- THE CRITICAL FIX (v3 - Corrected) ---
+  // We are now manually setting the port's Control Register C to
+  // use 8 data bits, Even parity, and 2 stop bits (0x2B).
+  USART1.CTRLC = 0x2B;
+
+  // Start the i-BUS listener on the now-correctly-configured port.
+  ibus.begin(Serial1);
+
+  Serial.println("IBus.begin() on Serial1 is complete.");
+}
+
+// =================================================================
+//   LOOP: Runs continuously
+// =================================================================
+void loop() {
+  ibus.loop();
+
+  for (int i = 0; i < 14; i++) {
+    Serial.print("CH");
+    Serial.print(i + 1);
+    Serial.print(": ");
+    Serial.print(ibus.readChannel(i));
+    Serial.print("\t");
+  }
+  Serial.println();
+
+  delay(250);
+}

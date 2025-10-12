@@ -1,0 +1,53 @@
+// =================================================================
+// Project:   i-BUS Receiver Diagnostic Tool
+// Version:   6.0 (Definitive Test: SoftwareSerial, Non-Inverted)
+// Date:      October 12, 2025
+// Purpose:   To test the hypothesis that the i-BUS signal is non-inverted.
+// =================================================================
+
+// -- LIBRARIES --
+#include <Arduino.h>
+#include <SoftwareSerial.h>
+#include <FlySkyIBus.h>
+
+// -- PIN DEFINITIONS --
+#define IBUS_RX_PIN 8 // Use Pin 8 as our virtual RX pin
+
+// -- OBJECTS --
+// Create a new SoftwareSerial port. The "false" at the end is the
+// most critical part: it tells the library the signal is NOT inverted.
+SoftwareSerial ibusSerial(IBUS_RX_PIN, IBUS_RX_PIN + 1, false);
+
+// =================================================================
+//   SETUP: Runs once at power-on
+// =================================================================
+void setup() {
+  // Start the main serial port for debugging
+  Serial.begin(115200);
+  delay(1000); 
+  
+  Serial.println("--- i-BUS Diagnostic Tool v6.0 ---");
+  Serial.println("Using SoftwareSerial (Non-Inverted) on Pin 8.");
+
+  // Start the i-BUS listener on our new virtual serial port.
+  IBus.begin(ibusSerial); 
+
+  Serial.println("IBus.begin() with SoftwareSerial is complete.");
+}
+
+// =================================================================
+//   LOOP: Runs continuously
+// =================================================================
+void loop() {
+  // Print each channel's value.
+  for (int i = 0; i < 14; i++) { // R7V may have more channels
+    Serial.print("CH");
+    Serial.print(i + 1);
+    Serial.print(": ");
+    Serial.print(IBus.readChannel(i));
+    Serial.print("\t");
+  }
+  Serial.println();
+  
+  delay(250); // Slow down the printing
+}
