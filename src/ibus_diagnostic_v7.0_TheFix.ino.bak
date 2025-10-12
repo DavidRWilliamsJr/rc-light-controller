@@ -21,7 +21,7 @@ void setup() {
 
   Serial.println("--- i-BUS Diagnostic Tool v7.3 (8E2 Test) ---");
 
-  // --- THE CRITICAL FIX (v3 - Corrected) ---
+  // --- THE CRITICAL FIX ---
   // We are now manually setting the port's Control Register C to
   // use 8 data bits, Even parity, and 2 stop bits (0x2B).
   USART1.CTRLC = 0x2B;

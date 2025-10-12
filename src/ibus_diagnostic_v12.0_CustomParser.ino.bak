@@ -1,0 +1,125 @@
+// =================================================================
+// Project:   i-BUS Receiver Diagnostic Tool
+// Version:   12.2 (Parser with Full Trace Diagnostics)
+// Date:      October 12, 2025
+// Purpose:   To trace the execution of the custom parser and
+//            find the exact point of failure.
+// =================================================================
+
+// -- GLOBAL VARIABLES --
+byte ibusPacket[32];
+int ibusChannels[14];
+
+// -- TIMING VARIABLES --
+unsigned long previousMillis = 0;
+const long interval = 500; // Slow down printing for trace readability
+
+// =================================================================
+//   SETUP: Runs once at power-on
+// =================================================================
+void setup() {
+  Serial.begin(115200);
+  delay(1000);
+  Serial.println("\n--- i-BUS Diagnostic Tool v12.2 (Trace Enabled) ---");
+  
+  Serial1.begin(115200);
+  USART1.CTRLC = 0; // Force 8N1 configuration
+  
+  Serial.println("Serial1 started with 8N1 configuration. Awaiting data...");
+}
+
+// =================================================================
+//   LOOP: Runs continuously
+// =================================================================
+void loop() {
+  if (readIbus()) {
+    Serial.println("--- VALID PACKET RECEIVED! ---");
+    unsigned long currentMillis = millis();
+    if (currentMillis - previousMillis >= interval) {
+      previousMillis = currentMillis;
+
+      for (int i = 0; i < 14; i++) {
+        Serial.print("CH");
+        Serial.print(i + 1);
+        Serial.print(": ");
+        Serial.print(ibusChannels[i]);
+        Serial.print("\t");
+      }
+      Serial.println();
+    }
+  } else {
+     // If no valid packet, print a waiting message so we know it's not frozen.
+     unsigned long currentMillis = millis();
+     if (currentMillis - previousMillis >= interval) {
+        previousMillis = currentMillis;
+        Serial.println("Waiting for valid i-BUS packet...");
+     }
+  }
+}
+
+// =================================================================
+//   CUSTOM i-BUS PARSER FUNCTION (with Trace Diagnostics)
+// =================================================================
+bool readIbus() {
+  static byte state = 0;
+  static byte len = 0;
+  static uint16_t checksum = 0;
+
+  if (Serial1.available()) {
+    Serial.println("Byte received from Serial1. Entering parser...");
+    while (Serial1.available()) {
+      byte b = Serial1.read();
+      Serial.print("State: "); Serial.print(state);
+      Serial.print(", Received Byte: 0x"); Serial.println(b, HEX);
+
+      switch (state) {
+        case 0: // Waiting for the start of the packet (length byte 0x20)
+          Serial.println("State 0: Looking for start byte 0x20...");
+          if (b == 0x20) {
+            ibusPacket[0] = b;
+            len = 1;
+            state = 1;
+            Serial.println("Start byte FOUND. Moving to State 1.");
+          } else {
+            Serial.println("Not start byte. Resetting.");
+          }
+          break;
+
+        case 1: // Reading the rest of the packet
+          Serial.print("State 1: Reading byte "); Serial.print(len); Serial.println(" of 32...");
+          ibusPacket[len++] = b;
+          if (len == 32) { // We have a full 32-byte packet
+            Serial.println("Full packet received. Moving to checksum validation...");
+            state = 0; // Reset for the next packet
+
+            if (ibusPacket[1] != 0x40) {
+              Serial.println("ERROR: Command byte is not 0x40. Packet invalid.");
+              return false;
+            }
+
+            checksum = 0xFFFF;
+            for (int i = 0; i < 30; i++) {
+              checksum -= ibusPacket[i];
+            }
+
+            uint16_t receivedChecksum = (ibusPacket[31] << 8) | ibusPacket[30];
+            
+            Serial.print("Calculated Checksum: 0x"); Serial.print(checksum, HEX);
+            Serial.print(" | Received Checksum: 0x"); Serial.println(receivedChecksum, HEX);
+
+            if (checksum == receivedChecksum) {
+              Serial.println("CHECKSUM VALID! Parsing channels...");
+              for (int i = 0; i < 14; i++) {
+                ibusChannels[i] = (ibusPacket[i * 2 + 3] << 8) | ibusPacket[i * 2 + 2];
+              }
+              return true; // Success! A valid packet was received.
+            } else {
+              Serial.println("CHECKSUM FAILED. Packet invalid.");
+            }
+          }
+          break;
+      }
+    }
+  }
+  return false;
+}

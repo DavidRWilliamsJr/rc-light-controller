@@ -157,3 +157,17 @@ To develop a custom, PCB-based light controller for an RC truck using an Arduino
 **Final Engineering Decision:** Based on the exhaustive and unresolvable nature of the i-BUS timing issues on this specific hardware, the decision has been made to pivot the project to the more reliable **PWM protocol**.
 
 **Status:** The diagnostic phase is complete. The project will now proceed with a PWM-based design
+
+### **October 11-12, 2025: Session 5 - In-Depth i-BUS Protocol Diagnostics & Final Pivot**
+
+**Summary:** Performed a comprehensive, multi-day, hands-on diagnostic of the Flysky i-BUS protocol with the Arduino Nano Every. After an exhaustive and methodical debugging process, the root cause of communication failure was identified as an unresolvable toolchain incompatibility, leading to a final engineering decision to pivot the project to the more reliable PWM protocol.
+
+**Log Details:**
+* **Environment Setup:** Successfully configured a local, native Windows development environment using VS Code and PlatformIO, resolving all initial setup issues.
+* **Initial Tests & Analysis:** A series of tests using multiple i-BUS libraries (`IBusBM`, `FlySkyIBus`), hardware configurations (signal inverters, different pins), and software configurations (`SoftwareSerial`, manual register settings) failed to produce a clean data stream. While some configurations produced garbled but responsive data, none resulted in a reliable connection.
+* **Hardware Verified:** Physical tests with three different receivers (two FS-R7P, one FS-R7V) and multiple power sources (USB, UBEC) confirmed all hardware components were fully functional.
+* **Root Cause Identified via Raw Data Analysis:** The breakthrough came from a custom-written raw data logger which proved that the Arduino's hardware serial port was successfully receiving clean, well-formed i-BUS data packets (evidenced by the repeating `20 40` header). This definitively proved that the hardware was not at fault and that all high-level libraries and custom parsers were failing to correctly interpret this valid data stream due to a deep, low-level timing or toolchain incompatibility with the ATmega4809 microcontroller.
+
+**Final Engineering Decision:** Based on the exhaustive and unresolvable nature of the i-BUS parsing issues on this specific hardware, the decision has been made to pivot the project's design from the i-BUS protocol to the more reliable **PWM protocol**.
+
+**Status:** The diagnostic phase is complete. The project will now proceed with a PWM-based design.
