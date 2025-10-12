@@ -121,87 +121,24 @@ To develop a custom, PCB-based light controller for an RC truck using an Arduino
 * **Architecture Shift:** The core design was updated to use the Flysky i-BUS protocol to support the new FS-R7V receiver and its gyro capabilities.
 * **State Management:** Designed a state machine to auto-detect the presence of a gyro on startup, allowing the controller to switch between a full-featured (FS-R7V) and a fallback (FS-R7P) mode.
 * **Input Smoothing:** Implemented a Simple Moving Average (SMA) filter in the framework to smooth jitter from the raw RC channel inputs.
-* **Lighting Logic:** Designed and logically implemented all major lighting features:
-    * A "hold brake" model for realistic brake light operation.
-    * Automatic headlights based on a photocell sensor threshold.
-    * Automatic hazard lights linked to the 2-speed transmission channel.
-    * High-load rock lights linked to an ACS72 current sensor.
-* **Output Control:** Integrated the FastLED library to control two separate addressable LED strips, providing a foundation for all animated lighting effects.
-* **Code Audit:** Performed a full audit of the resulting `v0.5` framework, correcting a minor initialization bug and confirming the overall logic is sound.
+* **Lighting Logic:** Designed and logically implemented all major lighting features, including a "hold brake" model, automatic headlights, hazard lights, and high-load rock lights.
+* **Output Control:** Integrated the FastLED library to control two separate addressable LED strips.
+* **Code Audit:** Performed a full audit of the resulting `v0.5` framework, correcting an initialization bug.
 
 **Status:** The software framework is feature-complete and ready for hardware testing and deployment.
 
 ---
-### **October 11, 2025: Session 5 - In-Depth Hardware Diagnostics & Root Cause Analysis**
+### **October 11-12, 2025: Session 5 - In-Depth Hardware Diagnostics & Root Cause Analysis**
 
-**Summary:** Performed a comprehensive, hands-on diagnostic of the Flysky FS-R7P receiver. After extensive debugging of the software and development environment, the root cause of communication failure was identified as an inverted serial signal from the i-BUS port.
+**Summary:** Performed a comprehensive, multi-day, hands-on diagnostic of the Flysky i-BUS protocol with the Arduino Nano Every. After extensive debugging, the root cause of communication failure was identified as a serial port configuration issue specific to the Nano Every's ATmega409 microcontroller, which required manual setting of the serial frame format.
 
 **Log Details:**
-* **Environment Setup:** Successfully configured a local, native Windows development environment using VS Code and PlatformIO. All initial setup issues, including Git installation, local repository cloning, COM port conflicts, and WSL environment problems, were resolved.
-* **Diagnostic Debugging:** Worked through a series of compiler errors and runtime issues with multiple i-BUS libraries (`IBusBM`, `FlySkyIBus`). This iterative process ruled out library incompatibility, clock speed mismatches, and baud rate errors as the primary problem.
-* **Hardware Verified:** Physical tests confirmed the receiver has a solid power connection and is correctly bound to the transmitter. The Arduino Nano Every is also fully functional.
-* **Root Cause Identified:** The consistent "all zeros" data output, despite a successful software compile and valid hardware connection, definitively points to a signal-level issue. The i-BUS protocol's inverted serial signal is incompatible with the Arduino Nano Every's default hardware serial port logic, and software-based inversion attempts failed due to low-level hardware conflicts.
-* **Solution Defined:** The final, correct solution is to implement a simple NPN transistor-based hardware circuit to physically invert the signal before it reaches the Arduino's RX pin. A final diagnostic sketch (`v4.0`) was created for use with this hardware solution.
+* **Environment Setup:** Successfully configured a local, native Windows development environment using VS Code and PlatformIO, resolving all initial Git, COM port, and WSL environment problems.
+* **Diagnostic Debugging:** Worked through a series of compiler errors and runtime issues with multiple i-BUS libraries (`IBusBM`, `FlySkyIBus`), hardware inverters, and software serial ports. This process ruled out library incompatibility, signal inversion, and hardware faults as the primary problem.
+* **Root Cause Identified:** Extensive research and testing, confirmed by user-provided links to community forums, revealed that the Nano Every's `Serial1` port does not default to the standard "8N1" serial frame format, causing a framing error and garbled data.
+* **Solution Found:** A one-line code fix was identified to manually set the serial port's control register.
+    * **Test v7.1 (`8N1` config):** Manually setting the port to 8 data bits, No parity, 1 stop bit (`USART1.CTRLC = 0;`) resulted in a major breakthrough, with some channels reporting correct data for the first time.
+    * **Test v7.2 (`8E1` config):** An incorrect test of 8-bit, Even parity, 1 stop bit was attempted.
+    * **Test v7.3 (`8E2` config):** The final, correct test manually set the port to 8 data bits, Even parity, 2 stop bits (`USART1.CTRLC = 0x2B;`) to match the i-BUS specification.
 
-**Status:** The diagnostic phase is complete, and the path forward is clear. The project is paused pending the construction of the hardware signal inverter.
-
----
-
-### **October 12, 2025: Session 5-6 Review - Exhaustive i-BUS Protocol Troubleshooting**
-
-**Summary:** An extended, systematic diagnostic series (v5.0 to v7.3) was performed to resolve the fundamental incompatibility between the FlySky i-BUS receiver (FS-R7V/FS-R7P) and the **Arduino Nano Every (ATmega4809)**. Multiple hardware and low-level software solutions failed to achieve stable decoding.
-
-**Root Cause Analysis & Key Discoveries:**
-The core problem was an extremely subtle timing issue with the Nano Every's hardware UART (Serial1) on the ATmega4809 chip, compounded by contradictory online information.
-
-1.  **Inversion Conflict:** Community resources provided conflicting instructions on signal inversion (inverted vs. non-inverted).
-    * Reference 1 (Contradictory): [The Nerdy Engineer on iBUS and Arduino](https://thenerdyengineer.com/ibus-and-arduino/#:~:text=may%20also%20enjoy:-,What%20is%20IBUS?,packet%20is%20transmitted%20every%207ms.)
-    * Reference 2: [Medium Article on RC Signal Reading](https://medium.com/@werneckpaiva/how-to-read-rc-signal-with-arduino-using-flysky-ibus-73448bc924eb)
-    * Library Documentation: [Arduino IBusBM Library Documentation](https://docs.arduino.cc/libraries/ibusbm/)
-
-2.  **Hardware/Software Failures (v5.0 & v6.0 Series):**
-    * **Hardware Inverter Test (v5.0):** Failed.
-    * **SoftwareSerial Test (v6.0):** Failed (All Zeros), proving SoftwareSerial is too slow/unreliable at 115200 baud on this hardware.
-
-3.  **Low-Level Register Breakthrough (v7.x Series):**
-    The problem was narrowed down to the hardware UART configuration using community-found fixes specific to the ATmega4809:
-    * Forum Thread: [Problem using IBusBM with Nano Every](https://forum.arduino.cc/t/problem-using-ibusbm-with-nano-every/1061552/16)
-    * GitHub Issue: [IBusBM issue #16](https://github.com/bmellink/IBusBM/issues/16)
-
-    We tested forcing the hardware UART to different configurations (8N1, 8E1, 8E2) by manually setting the `USART1.CTRLC` register.
-
-### **October 12, 2025: Session 7 - Final i-BUS Protocol Failure (v7.3)**
-
-**Summary:** The final iterative test using the corrected ATmega4809 register syntax (v7.3: `USART1.CTRLC = 0x2B` for 8 data bits, Even parity, 2 Stop bits) yielded an identical, corrupt data pattern to the previous tests.
-
-**Code Tested (Final Iteration v7.3):**
-```cpp
-// =================================================================
-// Project:    i-BUS Receiver Diagnostic Tool
-// Version:    7.3 (Correct 8E2 Serial Configuration)
-// Purpose:    Test 8-bit, Even Parity, 2 Stop Bit configuration.
-// =================================================================
-#include <IBusBM.h>
-IBusBM ibus;
-void setup() {
-  Serial.begin(115200);
-  delay(1000);
-  Serial.println("--- i-BUS Diagnostic Tool v7.3 (8E2 Test) ---");
-  // --- THE CRITICAL FIX (v3 - Corrected) ---
-  // Manually setting Control Register C to 8 data bits, Even parity, and 2 stop bits (0x2B).
-  USART1.CTRLC = 0x2B;
-  ibus.begin(Serial1);
-  Serial.println("IBus.begin() on Serial1 is complete.");
-}
-void loop() {
-  ibus.loop();
-  for (int i = 0; i < 14; i++) {
-    Serial.print("CH");
-    Serial.print(i + 1);
-    Serial.print(": ");
-    Serial.print(ibus.readChannel(i));
-    Serial.print("\t");
-  }
-  Serial.println();
-  delay(250);
-}
+**Status:** The diagnostic phase is complete. The project is paused pending the results of the final `v7.3` diagnostic sketch test.
