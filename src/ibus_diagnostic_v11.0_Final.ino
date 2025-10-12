@@ -1,69 +1,57 @@
 // =================================================================
 // Project:   i-BUS Receiver Diagnostic Tool
-// Version:   11.0 (The Complete Fix - All Required Components)
+// Version:   8.0 (The Real Fix - IBUSBM_NOTIMER Mode)
 // Date:      October 12, 2025
 // Purpose:   To correctly read i-BUS data on a Nano Every by
-//            implementing the full solution discovered in the
-//            IBusBM GitHub issue tracker.
+//            using the author-recommended manual loop method.
 // =================================================================
 
 // -- LIBRARIES --
-// 1. This #define MUST come BEFORE the library is included to
-//    configure the library during compilation.
+// This #define MUST come BEFORE the library is included.
+// It disables the library's internal timer, which is incompatible
+// with the Arduino Nano Every.
 #define IBUSBM_NOTIMER
 #include <IBusBM.h>
 
 // -- OBJECTS --
+// Initialize i-BUS object to listen on the second hardware
+// serial port (Serial1), which corresponds to Pin D0 (RX).
 IBusBM ibus;
-
-// -- TIMING VARIABLES for non-blocking delay --
-unsigned long previousMillis = 0;
-const long interval = 250; // How often to print (milliseconds)
 
 // =================================================================
 //   SETUP: Runs once at power-on
 // =================================================================
-
-// From example code used in troubleshoting by Bart
-IBusBM IBusServo;
-IBusBM IBusSensor;
-
 void setup() {
+  // Start the main serial port for debugging
   Serial.begin(115200);
   delay(1000);
 
-  Serial.println("--- i-BUS Diagnostic Tool v11.0 (The Complete Fix) ---");
+  Serial.println("--- i-BUS Diagnostic Tool v8.0 (The Real Fix) ---");
 
-  // 2. Start the i-BUS listener on the hardware serial port and
-  //    explicitly pass IBUSBM_NOTIMER as the second argument to
-  //    disable the incompatible hardware timer at runtime.
-  ibus.begin(Serial1, IBUSBM_NOTIMER);
+  // Start the i-BUS listener on the hardware serial port.
+  // No manual register configuration is needed with this method.
+  ibus.begin(Serial1);
 
-  Serial.println("IBus.begin() with IBUSBM_NOTIMER flag is complete.");
+  Serial.println("IBus.begin() on Serial1 is complete.");
 }
 
 // =================================================================
 //   LOOP: Runs continuously
 // =================================================================
 void loop() {
-  // 3. Call ibus.loop() on EVERY iteration of the main loop to
-  //    ensure we never miss an incoming data packet.
+  // Because we used IBUSBM_NOTIMER, we are now responsible for
+  // calling the loop() function ourselves to check for new data.
   ibus.loop();
 
-  // --- Non-Blocking Printing ---
-  // Only print the channel data every 250ms to keep it readable.
-  unsigned long currentMillis = millis();
-  if (currentMillis - previousMillis >= interval) {
-    previousMillis = currentMillis;
-
-    // Print each channel's value.
-    for (int i = 0; i < 14; i++) {
-      Serial.print("CH");
-      Serial.print(i + 1);
-      Serial.print(": ");
-      Serial.print(ibus.readChannel(i));
-      Serial.print("\t");
-    }
-    Serial.println();
+  // Print each channel's value. The R7V may have up to 14 channels.
+  for (int i = 0; i < 14; i++) {
+    Serial.print("CH");
+    Serial.print(i + 1);
+    Serial.print(": ");
+    Serial.print(ibus.readChannel(i));
+    Serial.print("\t");
   }
+  Serial.println();
+
+  delay(250); // Slow down the printing for readability
 }
