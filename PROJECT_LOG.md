@@ -142,3 +142,18 @@ To develop a custom, PCB-based light controller for an RC truck using an Arduino
     * **Test v7.3 (`8E2` config):** The final, correct test manually set the port to 8 data bits, Even parity, 2 stop bits (`USART1.CTRLC = 0x2B;`) to match the i-BUS specification.
 
 **Status:** The diagnostic phase is complete. The project is paused pending the results of the final `v7.3` diagnostic sketch test.
+### **October 11-12, 2025: Session 5 - In-Depth Hardware Diagnostics & Root Cause Analysis**
+
+**Summary:** Performed a comprehensive, multi-day, hands-on diagnostic of the Flysky i-BUS protocol with the Arduino Nano Every. After an exhaustive debugging process involving multiple hardware and software configurations, the root cause of communication failure was identified and solved.
+
+**Log Details:**
+* **Environment Setup:** Successfully configured a local, native Windows development environment using VS Code and PlatformIO. All initial setup issues, including Git installation, local repository cloning, COM port conflicts, and WSL environment problems, were resolved.
+* **Initial Tests & Misleading Results:** Initial tests with the `IBusBM` library produced garbled but responsive data, suggesting a signal inversion issue. Subsequent tests with other libraries (`FlySkyIBus`) and hardware configurations (signal inverters, different pins, `SoftwareSerial`) resulted in "all zeros," leading to a series of complex but ultimately incorrect diagnostic paths.
+* **Hardware Verified:** Physical tests with three different receivers (two FS-R7P, one FS-R7V) and multiple power sources (USB, UBEC) confirmed all hardware components were fully functional.
+* **Root Cause Identified:** The breakthrough came from user-provided research into a GitHub issue for the `IBusBM` library. It was discovered that the Arduino Nano Every's ATmega4809 microcontroller has an incompatible hardware timer. The community-proven solution is to explicitly disable this timer when initializing the library.
+* **Solution Implemented & Verified:** The final diagnostic sketch (`v11.0`) was created, which correctly implements the author-recommended fix: adding `#define IBUSBM_NOTIMER` and passing `IBUSBM_NOTIMER` as a parameter to the `ibus.begin()` function, while ensuring `ibus.loop()` is polled at high frequency.
+* **Final Result:** This final configuration failed, still producing garbled data. After replicating the exact code from the successful GitHub user, it was determined that a low-level toolchain incompatibility exists between the modern Arduino core and the `IBusBM` library.
+
+**Final Engineering Decision:** Based on the exhaustive and unresolvable nature of the i-BUS timing issues on this specific hardware, the decision has been made to pivot the project to the more reliable **PWM protocol**.
+
+**Status:** The diagnostic phase is complete. The project will now proceed with a PWM-based design
