@@ -144,3 +144,64 @@ To develop a custom, PCB-based light controller for an RC truck using an Arduino
 * **Solution Defined:** The final, correct solution is to implement a simple NPN transistor-based hardware circuit to physically invert the signal before it reaches the Arduino's RX pin. A final diagnostic sketch (`v4.0`) was created for use with this hardware solution.
 
 **Status:** The diagnostic phase is complete, and the path forward is clear. The project is paused pending the construction of the hardware signal inverter.
+
+---
+
+### **October 12, 2025: Session 5-6 Review - Exhaustive i-BUS Protocol Troubleshooting**
+
+**Summary:** An extended, systematic diagnostic series (v5.0 to v7.3) was performed to resolve the fundamental incompatibility between the FlySky i-BUS receiver (FS-R7V/FS-R7P) and the **Arduino Nano Every (ATmega4809)**. Multiple hardware and low-level software solutions failed to achieve stable decoding.
+
+**Root Cause Analysis & Key Discoveries:**
+The core problem was an extremely subtle timing issue with the Nano Every's hardware UART (Serial1) on the ATmega4809 chip, compounded by contradictory online information.
+
+1.  **Inversion Conflict:** Community resources provided conflicting instructions on signal inversion (inverted vs. non-inverted).
+    * Reference 1 (Contradictory): [The Nerdy Engineer on iBUS and Arduino](https://thenerdyengineer.com/ibus-and-arduino/#:~:text=may%20also%20enjoy:-,What%20is%20IBUS?,packet%20is%20transmitted%20every%207ms.)
+    * Reference 2: [Medium Article on RC Signal Reading](https://medium.com/@werneckpaiva/how-to-read-rc-signal-with-arduino-using-flysky-ibus-73448bc924eb)
+    * Library Documentation: [Arduino IBusBM Library Documentation](https://docs.arduino.cc/libraries/ibusbm/)
+
+2.  **Hardware/Software Failures (v5.0 & v6.0 Series):**
+    * **Hardware Inverter Test (v5.0):** Failed.
+    * **SoftwareSerial Test (v6.0):** Failed (All Zeros), proving SoftwareSerial is too slow/unreliable at 115200 baud on this hardware.
+
+3.  **Low-Level Register Breakthrough (v7.x Series):**
+    The problem was narrowed down to the hardware UART configuration using community-found fixes specific to the ATmega4809:
+    * Forum Thread: [Problem using IBusBM with Nano Every](https://forum.arduino.cc/t/problem-using-ibusbm-with-nano-every/1061552/16)
+    * GitHub Issue: [IBusBM issue #16](https://github.com/bmellink/IBusBM/issues/16)
+
+    We tested forcing the hardware UART to different configurations (8N1, 8E1, 8E2) by manually setting the `USART1.CTRLC` register.
+
+### **October 12, 2025: Session 7 - Final i-BUS Protocol Failure (v7.3)**
+
+**Summary:** The final iterative test using the corrected ATmega4809 register syntax (v7.3: `USART1.CTRLC = 0x2B` for 8 data bits, Even parity, 2 Stop bits) yielded an identical, corrupt data pattern to the previous tests.
+
+**Code Tested (Final Iteration v7.3):**
+```cpp
+// =================================================================
+// Project:    i-BUS Receiver Diagnostic Tool
+// Version:    7.3 (Correct 8E2 Serial Configuration)
+// Purpose:    Test 8-bit, Even Parity, 2 Stop Bit configuration.
+// =================================================================
+#include <IBusBM.h>
+IBusBM ibus;
+void setup() {
+  Serial.begin(115200);
+  delay(1000);
+  Serial.println("--- i-BUS Diagnostic Tool v7.3 (8E2 Test) ---");
+  // --- THE CRITICAL FIX (v3 - Corrected) ---
+  // Manually setting Control Register C to 8 data bits, Even parity, and 2 stop bits (0x2B).
+  USART1.CTRLC = 0x2B;
+  ibus.begin(Serial1);
+  Serial.println("IBus.begin() on Serial1 is complete.");
+}
+void loop() {
+  ibus.loop();
+  for (int i = 0; i < 14; i++) {
+    Serial.print("CH");
+    Serial.print(i + 1);
+    Serial.print(": ");
+    Serial.print(ibus.readChannel(i));
+    Serial.print("\t");
+  }
+  Serial.println();
+  delay(250);
+}
