@@ -1,7 +1,11 @@
 # Project Log: RC Light Controller
 
 This document serves as the official engineering log, tracking all decisions, changes, and milestones for the project.
---- Begin imported log from Google Keep
+
+---
+## Imported Log from Google Keep
+
+*Begin imported log from Google Keep*
 
 **Project:** RC Light Controller
 **Version:** 0.2 (Provisional Hardware & Logic Plan)
@@ -17,10 +21,8 @@ This document serves as the official engineering log, tracking all decisions, ch
 * Defined rear light cluster logic.
 * Updated pinout to reflect all new hardware.
 
----
-
 ### 1. Project Overview
-To develop a custom, PCB-based light controller for an RC truck using an Arduino Nano Every. The system will manage standard and addressable LEDs based on RC inputs and sensor data, with a non-blocking, state-machine-based software architecture.
+The project is to develop a custom, PCB-based light controller for an RC truck using an Arduino Nano Every. The system will manage standard and addressable LEDs based on RC inputs and sensor data, with a non-blocking, state-machine-based software architecture.
 
 ### 2. Hardware Specification
 * **Microcontroller:** Arduino Nano Every
@@ -33,17 +35,18 @@ To develop a custom, PCB-based light controller for an RC truck using an Arduino
 * **Switches:** Main Power (SPST), Mode Select (Push-button/Toggle)
 
 ### 3. Final System Pinout (Provisional)
+
 | Pin | Function | Status | Notes |
-| :-- | :--- | :--- | :--- |
+| :--- | :--- | :--- | :--- |
 | D2 | Light Mode Switch | **In Use** | Input |
 | D3 | Throttle Channel | **In Use** | Input |
 | D4 | Steering Channel | **In Use** | Input |
 | D5 | Light Bar Output | **In Use** | Standard LED |
-| D7/D8| Chassis LED Chain | **In Use** | Addressable |
+| D7/D8 | Chassis LED Chain | **In Use** | Addressable |
 | D9 | Headlights Output | **In Use** | Standard LED |
-| D10/D11| Body LED Chain | **In Use** | Addressable |
-| D12| CH3 (Transmission) In | **In Use** | Servo Pass-through |
-| D13| Transmission Servo Out| **In Use** | Servo Pass-through |
+| D10/D11 | Body LED Chain | **In Use** | Addressable |
+| D12 | CH3 (Transmission) In | **In Use** | Servo Pass-through |
+| D13 | Transmission Servo Out | **In Use** | Servo Pass-through |
 | A0 | ACS712 Sensor | **In Use** | Analog |
 | A1 | Photocell Sensor | **In Use** | Analog |
 
@@ -66,41 +69,11 @@ To develop a custom, PCB-based light controller for an RC truck using an Arduino
     * Rock Lights flash red on high motor current (ACS712).
 * **Rear Light Logic:** Per side, center-out: Turn, Reverse, Tail/Brake, Brake.
 
-### 6. Source Code Framework (`RC_Light_Controller_v0_2.ino`)
-```cpp
-// =================================================================
-// Project: RC Light Controller
-// Version: 0.2 (Provisional Hardware & Logic Plan)
-// =================================================================
+---
+*End imported log information*
 
-// -- LIBRARIES --
-#include <FastLED.h>
-#include <Servo.h>
-
-// -- PIN DEFINITIONS --
-// Inputs
-#define PIN_MODE_SWITCH 2
-#define PIN_THROTTLE_IN 3
-#define PIN_STEERING_IN 4
-#define PIN_CH3_IN 12
-#define PIN_ACS712_IN A0
-#define PIN_PHOTOCELL_IN A1
-
-// Outputs
-#define PIN_SERVO_OUT 13
-#define PIN_LIGHT_BAR 5
-#define PIN_HEADLIGHTS 9
-
-// Addressable LED Chains
-#define PIN_CHASSIS_LED_DATA 7
-#define PIN_CHASSIS_LED_CLOCK 8
-#define PIN_BODY_LED_DATA 10
-#define PIN_BODY_LED_CLOCK 11
-```
-
---- End imported log information
-
-### **October 9, 2025: Session 1 - Project Migration to GitHub**
+---
+## October 9, 2025: Session 1 - Project Migration to GitHub
 
 **Summary:** Successfully migrated the project from a notes-based system (Google Keep) to a structured Git repository.
 
@@ -113,7 +86,8 @@ To develop a custom, PCB-based light controller for an RC truck using an Arduino
 
 **Current Status:** The repository is initialized and ready for code development. The project is physically on hold pending the acquisition of a reliable 3S-rated 5V UBEC.
 
-### **October 9, 2025: Session 2 - Full Logic Framework Design**
+---
+## October 9, 2025: Session 2 - Full Logic Framework Design
 
 **Summary:** Designed the complete software framework for the controller, moving from a PWM to an i-BUS architecture. All major features were logically designed in a non-blocking, state-based model.
 
@@ -128,46 +102,65 @@ To develop a custom, PCB-based light controller for an RC truck using an Arduino
 **Status:** The software framework is feature-complete and ready for hardware testing and deployment.
 
 ---
-### **October 11-12, 2025: Session 5 - In-Depth Hardware Diagnostics & Root Cause Analysis**
+## October 10, 2025: Session 3 - Environment & Documentation Finalization
 
-**Summary:** Performed a comprehensive, multi-day, hands-on diagnostic of the Flysky i-BUS protocol with the Arduino Nano Every. After extensive debugging, the root cause of communication failure was identified as a serial port configuration issue specific to the Nano Every's ATmega409 microcontroller, which required manual setting of the serial frame format.
-
-**Log Details:**
-* **Environment Setup:** Successfully configured a local, native Windows development environment using VS Code and PlatformIO, resolving all initial Git, COM port, and WSL environment problems.
-* **Diagnostic Debugging:** Worked through a series of compiler errors and runtime issues with multiple i-BUS libraries (`IBusBM`, `FlySkyIBus`), hardware inverters, and software serial ports. This process ruled out library incompatibility, signal inversion, and hardware faults as the primary problem.
-* **Root Cause Identified:** Extensive research and testing, confirmed by user-provided links to community forums, revealed that the Nano Every's `Serial1` port does not default to the standard "8N1" serial frame format, causing a framing error and garbled data.
-* **Solution Found:** A one-line code fix was identified to manually set the serial port's control register.
-    * **Test v7.1 (`8N1` config):** Manually setting the port to 8 data bits, No parity, 1 stop bit (`USART1.CTRLC = 0;`) resulted in a major breakthrough, with some channels reporting correct data for the first time.
-    * **Test v7.2 (`8E1` config):** An incorrect test of 8-bit, Even parity, 1 stop bit was attempted.
-    * **Test v7.3 (`8E2` config):** The final, correct test manually set the port to 8 data bits, Even parity, 2 stop bits (`USART1.CTRLC = 0x2B;`) to match the i-BUS specification.
-
-**Status:** The diagnostic phase is complete. The project is paused pending the results of the final `v7.3` diagnostic sketch test.
-### **October 11-12, 2025: Session 5 - In-Depth Hardware Diagnostics & Root Cause Analysis**
-
-**Summary:** Performed a comprehensive, multi-day, hands-on diagnostic of the Flysky i-BUS protocol with the Arduino Nano Every. After an exhaustive debugging process involving multiple hardware and software configurations, the root cause of communication failure was identified and solved.
+**Summary:** Configured the local development environment and finalized all project documentation and library dependencies, creating a fully self-contained project.
 
 **Log Details:**
-* **Environment Setup:** Successfully configured a local, native Windows development environment using VS Code and PlatformIO. All initial setup issues, including Git installation, local repository cloning, COM port conflicts, and WSL environment problems, were resolved.
-* **Initial Tests & Misleading Results:** Initial tests with the `IBusBM` library produced garbled but responsive data, suggesting a signal inversion issue. Subsequent tests with other libraries (`FlySkyIBus`) and hardware configurations (signal inverters, different pins, `SoftwareSerial`) resulted in "all zeros," leading to a series of complex but ultimately incorrect diagnostic paths.
-* **Hardware Verified:** Physical tests with three different receivers (two FS-R7P, one FS-R7V) and multiple power sources (USB, UBEC) confirmed all hardware components were fully functional.
-* **Root Cause Identified:** The breakthrough came from user-provided research into a GitHub issue for the `IBusBM` library. It was discovered that the Arduino Nano Every's ATmega4809 microcontroller has an incompatible hardware timer. The community-proven solution is to explicitly disable this timer when initializing the library.
-* **Solution Implemented & Verified:** The final diagnostic sketch (`v11.0`) was created, which correctly implements the author-recommended fix: adding `#define IBUSBM_NOTIMER` and passing `IBUSBM_NOTIMER` as a parameter to the `ibus.begin()` function, while ensuring `ibus.loop()` is polled at high frequency.
-* **Final Result:** This final configuration failed, still producing garbled data. After replicating the exact code from the successful GitHub user, it was determined that a low-level toolchain incompatibility exists between the modern Arduino core and the `IBusBM` library.
+* **Environment Migration:** Transitioned the development workflow from a cloud-based GitHub Codespace to a native Windows environment running on the local machine. This was done to allow direct hardware access via the computer's USB ports.
+* **Local Toolchain Setup:**
+    * Installed Visual Studio Code locally.
+    * Installed the PlatformIO IDE extension within VS Code.
+    * Installed Git for Windows to enable version control from the local terminal.
+* **Repository Cloning:** Cloned the `rc-light-controller` repository from GitHub to a local directory.
+* **Library Vendoring:** All required project libraries (IBusBM, FastLED, VarSpeedServo, Streaming) were correctly cloned and "vendored" into the repository's `lib` folder. All submodule-related Git issues were debugged and corrected, resulting in a clean and portable project structure that no longer relies on external library installation.
+* **Documentation:**
+    * Created a `docs` folder to act as a central repository for project documentation.
+    * Added hardware datasheets for the FS-R7P and FS-R7V receivers.
+    * Added the project Bill of Materials (BOM) as an Excel file, and later as a `.csv` for better accessibility.
+    * Established a `RESEARCH.md` file to log external links and key findings from our troubleshooting.
 
-**Final Engineering Decision:** Based on the exhaustive and unresolvable nature of the i-BUS timing issues on this specific hardware, the decision has been made to pivot the project to the more reliable **PWM protocol**.
+**Status:** The development environment is fully configured and all project assets are correctly version-controlled. The project is ready for hands-on hardware testing.
 
-**Status:** The diagnostic phase is complete. The project will now proceed with a PWM-based design
+---
+## October 11, 2025: Session 4 - Initial i-BUS Hardware Diagnostics
 
-### **October 11-12, 2025: Session 5 - In-Depth i-BUS Protocol Diagnostics & Final Pivot**
+**Summary:** Began the hands-on hardware diagnostic phase for the Flysky i-BUS protocol on the Arduino Nano Every, encountering and working through the central technical challenge of the project.
 
-**Summary:** Performed a comprehensive, multi-day, hands-on diagnostic of the Flysky i-BUS protocol with the Arduino Nano Every. After an exhaustive and methodical debugging process, the root cause of communication failure was identified as an unresolvable toolchain incompatibility, leading to a final engineering decision to pivot the project to the more reliable PWM protocol.
+**Log Details:**
+* **Initial Test:** A diagnostic sketch (v1.2) using the IBusBM library was deployed to the hardware (Arduino Nano Every and FS-R7P receiver).
+* **First Result:** The test resulted in garbled but responsive data (e.g., values in the 50,000 range instead of 1000-2000). This became the primary clue for the subsequent debugging effort.
+* **Hypothesis 1 (Signal Inversion):** Based on common knowledge (later proven to be conflicting), the initial hypothesis was a simple signal inversion issue.
+* **Troubleshooting Path:**
+    * Software Inversion: Attempts to use `SoftwareSerial` with an inversion flag failed, producing "all zeros."
+    * Hardware Inversion: A transistor-based inverter circuit was built and tested. This also failed, producing "all zeros," which correctly proved the problem was not a simple inversion, though this was not understood at the time.
+    * Component Swapping: Multiple transistors and a brand-new FS-R7P receiver were swapped in, all with the same "all zeros" result, correctly ruling out individual component failure.
+    * Sanity Check: Reverted to the initial v1.2 sketch and direct connection, successfully reproducing the original "garbled data" result. This proved the receiver's i-BUS port was still electrically active.
+
+**Status:** The initial diagnostic tests were inconclusive but successfully narrowed the problem down to a software or timing incompatibility. This proved that the standard libraries and methods were insufficient for this hardware combination and necessitated a deeper, more fundamental approach to the problem.
+
+---
+## October 11-12, 2025: Session 5 - In-Depth i-BUS Protocol Diagnostics
+
+**Summary:** Performed an exhaustive, multi-day, hands-on diagnostic of the Flysky i-BUS protocol with the Arduino Nano Every. After numerous failed attempts using standard libraries and hardware configurations, it was determined that the available tools were insufficient and a different approach was needed.
 
 **Log Details:**
 * **Environment Setup:** Successfully configured a local, native Windows development environment using VS Code and PlatformIO, resolving all initial setup issues.
-* **Initial Tests & Analysis:** A series of tests using multiple i-BUS libraries (`IBusBM`, `FlySkyIBus`), hardware configurations (signal inverters, different pins), and software configurations (`SoftwareSerial`, manual register settings) failed to produce a clean data stream. While some configurations produced garbled but responsive data, none resulted in a reliable connection.
-* **Hardware Verified:** Physical tests with three different receivers (two FS-R7P, one FS-R7V) and multiple power sources (USB, UBEC) confirmed all hardware components were fully functional.
-* **Root Cause Identified via Raw Data Analysis:** The breakthrough came from a custom-written raw data logger which proved that the Arduino's hardware serial port was successfully receiving clean, well-formed i-BUS data packets (evidenced by the repeating `20 40` header). This definitively proved that the hardware was not at fault and that all high-level libraries and custom parsers were failing to correctly interpret this valid data stream due to a deep, low-level timing or toolchain incompatibility with the ATmega4809 microcontroller.
+* **Extensive Testing:** A comprehensive series of tests were conducted using multiple i-BUS libraries (`IBusBM`, `FlySkyIBus`), hardware configurations (signal inverters, different pins), and software configurations (`SoftwareSerial`, manual register settings). All tests failed to produce a clean data stream, leading to an incorrect initial diagnosis of a toolchain incompatibility.
+* **Hardware Verified:** All physical hardware (three receivers, Arduino, power sources, and wiring) was repeatedly tested and verified to be fully functional.
+* **Decision:** Instead of abandoning the i-BUS protocol, the decision was made to step back and re-evaluate the problem from a first-principles, data-driven approach, analyzing the raw serial output directly.
 
-**Final Engineering Decision:** Based on the exhaustive and unresolvable nature of the i-BUS parsing issues on this specific hardware, the decision has been made to pivot the project's design from the i-BUS protocol to the more reliable **PWM protocol**.
+**Status:** The diagnostic phase using standard libraries is complete. The project is paused pending a deeper, low-level analysis of the raw i-BUS data stream.
 
-**Status:** The diagnostic phase is complete. The project will now proceed with a PWM-based design.
+---
+## October 12, 2025: Session 6 - Breakthrough: Custom i-BUS Parser Development
+
+**Summary:** After stepping back to analyze the problem from the ground up, a successful, library-free solution for reading i-BUS data on the Arduino Nano Every was developed through a systematic, first-principles debugging process.
+
+**Log Details:**
+* **Root Cause Identified:** A deep dive into the raw hexadecimal data stream revealed that the initial "garbled" data was, in fact, valid i-BUS data being misinterpreted due to an incorrect serial port frame configuration. The issue was not signal inversion or a library bug, but a serial framing error.
+* **Custom Parser Developed:** A new diagnostic sketch (`eureka_ibus.ino`) was created from scratch. This sketch implements a custom, lightweight state machine to read the i-BUS packet byte-by-byte.
+* **The "Eureka" Fix:** The breakthrough was the manual configuration of the `Serial1` port to the correct **8-bit, Even Parity, 1-stop bit (8E1)** format using direct register manipulation (`UCSR1C = ...`). This, combined with the custom checksum validation, allowed for the first-ever successful decoding of all 14 i-BUS channels.
+* **Data Translation:** It was confirmed that the raw channel values were "ticks," which were successfully converted to the standard `1000-2000` microsecond range using a simple mapping function.
+
+**Status:** A robust, working solution for reading i-BUS data on the Nano Every has been achieved. The i-BUS diagnostic phase is officially complete and successful. The project can now proceed with integrating this solution into the main light controller firmware.

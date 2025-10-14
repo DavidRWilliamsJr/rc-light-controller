@@ -1,0 +1,204 @@
+// =================================================================
+// Project:   RC Light Controller
+// Version:   0.6 ("Eureka" i-BUS Integration)
+// Date:      October 13, 2025
+// =================================================================
+
+// -- LIBRARIES --
+#include <Arduino.h>
+#include <FastLED.h>
+// NOTE: All external i-BUS libraries have been removed.
+
+// -- SETTINGS & MODE FLAGS --
+// No longer need a simulation mode, we have a live signal!
+
+// -- STATE DEFINITIONS --
+#define STATE_STARTUP 0
+#define STATE_GYRO_ACTIVE 1
+#define STATE_NO_GYRO_FALLBACK 2 // Kept for future logic
+
+// -- PIN DEFINITIONS --
+#define PIN_MODE_SWITCH 2
+#define PIN_ACS712_IN A0
+#define PIN_PHOTOCELL_IN A1
+
+#define PIN_LIGHT_BAR 5
+#define PIN_HEADLIGHTS 9
+
+#define PIN_CHASSIS_LED_DATA 7
+#define PIN_BODY_LED_DATA 10
+
+// -- FASTLED DEFINITIONS --
+#define NUM_LEDS_CHASSIS 8
+#define NUM_LEDS_BODY 16
+
+// -- RC CHANNEL DEFINITIONS --
+#define THROTTLE_CENTER 1500
+#define THROTTLE_DEADBAND 20
+
+// -- SENSOR THRESHOLDS --
+#define LIGHT_SENSOR_THRESHOLD 400
+#define CURRENT_SENSOR_ZERO 512
+#define CURRENT_SENSOR_THRESHOLD 50
+
+// -- SMOOTHING DEFINITIONS --
+#define NUM_SAMPLES 5
+
+// -- GLOBAL VARIABLES --
+// System State
+int g_state = STATE_STARTUP;
+
+// i-BUS Parser Variables (from Eureka sketch)
+byte g_ibusPacket[32];
+int g_raw_ibusChannels[14]; // Raw "tick" values from the parser
+
+// Smoothed RC Data
+int g_steeringReadings[NUM_SAMPLES];
+int g_throttleReadings[NUM_SAMPLES];
+int g_readingIndex = 0;
+int g_smoothedSteering;
+int g_smoothedThrottle;
+
+// FastLED arrays
+CRGB g_chassisLeds[NUM_LEDS_CHASSIS];
+CRGB g_bodyLeds[NUM_LEDS_BODY];
+
+
+// =================================================================
+//   SETUP: Runs once at power-on
+// =================================================================
+void setup() {
+  Serial.begin(115200);
+  Serial.println("RC Light Controller v0.6 Booting...");
+
+  // --- Initialize i-BUS Port (The Eureka Fix) ---
+  Serial1.begin(115200);
+  UCSR1C = (1 << UPM11) | (1 << UCSZ10) | (1 << UCSZ11); // 8E1 Config
+  Serial.println("Serial1 started with correct 8E1 configuration.");
+
+  // --- Initialize FastLED ---
+  FastLED.addLeds<WS2812B, PIN_CHASSIS_LED_DATA, GRB>(g_chassisLeds, NUM_LEDS_CHASSIS);
+  FastLED.addLeds<WS2812B, PIN_BODY_LED_DATA, GRB>(g_bodyLeds, NUM_LEDS_BODY);
+
+  // --- Pin Modes ---
+  pinMode(PIN_HEADLIGHTS, OUTPUT);
+
+  // --- Initialize smoothing arrays ---
+  for (int i = 0; i < NUM_SAMPLES; i++) {
+    g_steeringReadings[i] = 1500;
+    g_throttleReadings[i] = THROTTLE_CENTER;
+  }
+  
+  Serial.println("Setup Complete.");
+}
+
+// =================================================================
+//   LOOP: Runs continuously
+// =================================================================
+void loop() {
+  readReceiverInputs(); // Now calls our custom parser
+  smoothInputs();
+  // manageSystemState(); // Commented out for now
+  // updateAllLights();   // Commented out for now
+
+  // For this first test, let's just print the smoothed values
+  // to confirm everything is working inside the main sketch.
+  Serial.print("Smoothed Throttle: ");
+  Serial.print(g_smoothedThrottle);
+  Serial.print("\t Smoothed Steering: ");
+  Serial.println(g_smoothedSteering);
+  delay(100); // Slow down printing for this test
+}
+
+// =================================================================
+//   CUSTOM FUNCTIONS
+// =================================================================
+
+/**
+ * @brief Reads data from the i-BUS receiver using our custom parser.
+ */
+void readReceiverInputs() {
+  if (readIbus()) {
+    // If a valid packet was received, update our main channel variables
+    // No conversion needed yet, smoothing will handle raw ticks.
+  }
+}
+
+void smoothInputs() {
+  // Store the latest raw readings from our custom parser
+  // Channel 0 is Steering, Channel 1 is Throttle
+  g_steeringReadings[g_readingIndex] = g_raw_ibusChannels[0];
+  g_throttleReadings[g_readingIndex] = g_raw_ibusChannels[1];
+
+  g_readingIndex = (g_readingIndex + 1) % NUM_SAMPLES;
+
+  long steeringTotal = 0;
+  long throttleTotal = 0;
+  for (int i = 0; i < NUM_SAMPLES; i++) {
+    steeringTotal += g_steeringReadings[i];
+    throttleTotal += g_throttleReadings[i];
+  }
+  
+  // Get the average raw "tick" value
+  int avgSteeringTicks = steeringTotal / NUM_SAMPLES;
+  int avgThrottleTicks = throttleTotal / NUM_SAMPLES;
+
+  // Now, map the averaged tick values to the 1000-2000 range
+  g_smoothedSteering = map(avgSteeringTicks, 21480, 54748, 1000, 2000);
+  g_smoothedThrottle = map(avgThrottleTicks, 21480, 54748, 1000, 2000);
+}
+
+
+// Placeholder functions - we will re-enable these later
+void manageSystemState() {}
+void updateAllLights() {}
+
+
+// =================================================================
+//   CUSTOM i-BUS PARSER (Developed by David Williams Jr.)
+// =================================================================
+bool readIbus() {
+  static byte state = 0;
+  static byte len = 0;
+  static uint16_t checksum = 0;
+
+  while (Serial1.available()) {
+    byte b = Serial1.read();
+
+    switch (state) {
+      case 0: // Waiting for start bytes
+        if (b == 0x20) {
+          g_ibusPacket[0] = b;
+          len = 1;
+          state = 1;
+        }
+        break;
+
+      case 1: // Reading the rest of the packet
+        g_ibusPacket[len++] = b;
+        if (len == 32) {
+          state = 0; // Reset for the next packet
+
+          if (g_ibusPacket[1] != 0x40) {
+            return false;
+          }
+
+          checksum = 0xFFFF;
+          for (int i = 0; i < 30; i++) {
+            checksum -= g_ibusPacket[i];
+          }
+
+          uint16_t receivedChecksum = (g_ibusPacket[31] << 8) | g_ibusPacket[30];
+
+          if (checksum == receivedChecksum) {
+            for (int i = 0; i < 14; i++) {
+              g_raw_ibusChannels[i] = (g_ibusPacket[i * 2 + 3] << 8) | g_ibusPacket[i * 2 + 2];
+            }
+            return true; // Success!
+          }
+        }
+        break;
+    }
+  }
+  return false;
+}
