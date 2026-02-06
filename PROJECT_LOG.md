@@ -160,7 +160,7 @@ The project is to develop a custom, PCB-based light controller for an RC truck u
 **Log Details:**
 * **Root Cause Identified:** A deep dive into the raw hexadecimal data stream revealed that the initial "garbled" data was, in fact, valid i-BUS data being misinterpreted due to an incorrect serial port frame configuration. The issue was not signal inversion or a library bug, but a serial framing error.
 * **Custom Parser Developed:** A new diagnostic sketch (`eureka_ibus.ino`) was created from scratch. This sketch implements a custom, lightweight state machine to read the i-BUS packet byte-by-byte.
-* **The "Eureka" Fix:** The breakthrough was the manual configuration of the `Serial1` port to the correct **8-bit, Even Parity, 1-stop bit (8E1)** format using direct register manipulation (`UCSR1C = ...`). This, combined with the custom checksum validation, allowed for the first-ever successful decoding of all 14 i-BUS channels.
+* **The "Eureka" Fix:** The breakthrough was the manual configuration of the `Serial1` port to the correct **8-bit, Even Parity, 2-stop bit (8E2)** format using direct register manipulation (`UCSR1C = ...`). This, combined with the custom checksum validation, allowed for the first-ever successful decoding of all 14 i-BUS channels.
 * **Data Translation:** It was confirmed that the raw channel values were "ticks," which were successfully converted to the standard `1000-2000` microsecond range using a simple mapping function.
 
 **Status:** A robust, working solution for reading i-BUS data on the Nano Every has been achieved. The i-BUS diagnostic phase is officially complete and successful. The project can now proceed with integrating this solution into the main light controller firmware.
