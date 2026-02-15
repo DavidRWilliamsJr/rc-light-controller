@@ -1,0 +1,39 @@
+Category,Item #,Part Description,Reference Designator,Quantity Needed,Quantity on Hand,Notes / Part #,Verified
+LEDs,1,SparkFun COM-12986 (APA106 (COM-12986)),,,24,Addressable LEDs,Yes
+LEDs,2,"LED, White 5mm","LED_HL, LED_HR",2,2,Headlights (resistor included),Quantity Only
+LEDs,3,"LED, Red 3.5mm","LED_TL, LED_TR",2,2,Tail Lights (resistor included),Quantity Only
+LEDs,4,Unwired White 2mm LEDs,,,10,Needs resistor,Quantity Only
+LEDs,5,Unwired Yellow 2mm LEDs,,,10,Needs resistor,Quantity Only
+LEDs,6,Unwired Blue 2mm LEDs,,,10,Needs resistor,Quantity Only
+LEDs,7,Unwired Red 2mm LEDs,,,10,Needs resistor,Quantity Only
+Microcontrollers & Core Components,8,Arduino Nano Every,U1,1,1,Main Microcontroller,Yes
+Microcontrollers & Core Components,9,ACS712 Current Sensor Module,SEN1,1,2,For motor load sensing,Yes
+Microcontrollers & Core Components,10,Adafruit UBEC 3A 5V Regulator,,1,1,Power Regulator,Yes
+Microcontrollers & Core Components,11,"Capacitor, 16VDC 1000uF 8x20mm LS 5.0mm",C1,1,10,Power supply stabilization,Yes
+Prototyping & Connection,12,Connector Header Pins,,,80,,Yes
+Prototyping & Connection,13,Solderless Breadboard,,,1,,Yes
+Prototyping & Connection,14,"DuPont Leads, M-F",,As needed,120,"Elegoo, for prototyping",Yes
+Prototyping & Connection,15,"DuPont Leads, M-M",,As needed,80,"Elegoo, for prototyping",Yes
+Resistors & Passive Components,16,"Capacitor, 16volts 470uF AEC-Q200",,,10,,Yes
+Resistors & Passive Components,17,"Resistor, 430Ω",R1,1,,For LED Data line,No
+Resistors & Passive Components,18,Servo Y-Splitter Cable,"W1, W2",2,4,For Throttle & Steering,Yes
+Resistors & Passive Components,19,"Wire, 30 AWG Silicone",,As needed,5 spools,Assorted Colors,Yes
+Resistors & Passive Components,20,"Capacitor, 100µF",,,5,Big Can,Yes
+Resistors & Passive Components,21,"Capacitor, 10µF",,,5,Small Can,Yes
+Resistors & Passive Components,22,"Capacitor, 22µF",,,10,Flat Brown,Yes
+Resistors & Passive Components,23,"Capacitor, 104µF",,,10,Flat Brown,Yes
+Resistors & Passive Components,24,Resistor 1K,,,10,,Yes
+Resistors & Passive Components,25,Resistor 100,,,10,,Yes
+Resistors & Passive Components,26,Resistor 1M,,,10,,Yes
+Resistors & Passive Components,27,Resistor 10,,,10,,Yes
+Resistors & Passive Components,28,Resistor 100K,,,10,,Yes
+Resistors & Passive Components,29,Resistor 330,,,10,,Yes
+Resistors & Passive Components,30,Resistor 10K,,,10,,Yes
+Resistors & Passive Components,31,Resistor 2K,,,10,,Yes
+Resistors & Passive Components,32,Resistor 220,,,10,,Yes
+Resistors & Passive Components,33,Resistor 5.1K,,,10,,Yes
+Resistors & Passive Components,34,Diode,,,5,,Yes
+Switches & Inputs,35,Toggle Switch SPDT ON-OFF-ON,,,8,,Yes
+Switches & Inputs,36,Potentiometer (10kΩ),,,2,,Yes
+Tools & Power,37,XT30 Connector Pair,,1+,5,For main power connection,Yes
+Tools & Power,38,"Servo Extension Cable, 3-inch",,As needed,5,For signal routing,Yes
